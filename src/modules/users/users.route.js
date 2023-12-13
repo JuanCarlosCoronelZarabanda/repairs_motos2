@@ -1,14 +1,20 @@
 import express from "express";
 import {
-  createUser,
-  deleteUser,
-  findAllUsers,
-  findOneUser,
-  updateUser,
+  deleteOne,
+  findAll,
+  create,
+  findOne,
+  login,
+  updateOne,
 } from "./users.controller.js";
+import { validateExistUser } from "./users.middleware.js";
 
 export const router = express.Router();
-
-router.route("/").get(findAllUsers).post(createUser);
-
-router.route("/:id").get(findOneUser).patch(updateUser).delete(deleteUser);
+router.post("/", create);
+router.post("/login", login);
+router.get("/", findAll);
+router
+  .route("/:id")
+  .get(validateExistUser, findOne)
+  .put(validateExistUser, updateOne)
+  .delete(validateExistUser, deleteOne);

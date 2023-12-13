@@ -1,18 +1,22 @@
 import express from "express";
 import {
-  createRepair,
-  deleteRepair,
-  findAllRepairs,
-  findOneRepair,
-  updateRepair,
+  findAll,
+  create,
+  findOne,
+  updateOne,
+  deleteOne,
 } from "./repairs.controller.js";
+import { validatePendingRepair } from "./repairs.middleware.js";
+import { protect, restrictTo } from "../users/users.middleware.js";
 
 export const router = express.Router();
+router.post("/", create);
 
-router.route("/").get(findAllRepairs).post(createRepair);
+router.use(protect);
+router.get("/", restrictTo("empleado"), findAll);
 
 router
   .route("/:id")
-  .get(findOneRepair)
-  .patch(updateRepair)
-  .delete(deleteRepair);
+  .get(restrictTo("empleado"), validatePendingRepair, findOne)
+  .put(restrictTo("empleado"), validatePendingRepair, updateOne)
+  .delete(restrictTo("empleado"), validatePendingRepair, deleteOne);

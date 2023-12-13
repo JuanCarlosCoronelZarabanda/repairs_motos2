@@ -1,100 +1,90 @@
-import { UserService } from "./users.service.js";
+import { AppError } from "../../common/errors/appError.js";
+import { catchAsync } from "../../common/errors/catchAsync.js";
+import { verifyPassword } from "../../config/plugins/encripted-password.plugin.js";
+import {
+  validateLogin,
+  validatePartialUser,
+  validateUser,
+} from "./users.schema.js";
+import { UsersService } from "./users.service.js";
+import { generateJWT } from "../../config/plugins/generate-jwt.plugin.js";
 
-export const findAllUsers = async (req, res) => {
-  try {
-    const users = await UserService.findAll();
-
-    return res.status(200).json(users);
-  } catch (error) {
-    return res.status(500).json({
-      status: "fail",
-      message: "Something went very wrong! 🧨",
+export const login = catchAsync(async (req, res, next) => {
+  //1. traer los datos de la req.body y validarlos
+  const { hasError, errorMessages, userData } = validateLogin(req.body);
+  if (hasError) {
+    return res.status(422).json({
+      status: "error",
+      message: errorMessages,
     });
   }
+  //2. validar que el usuario exista en la base de datos
+  const user = await UsersService.findOneByEmail(userData.email);
+  if (!user) {
+    return next(new AppError("This account does not exist", 404));
+  }
+  //3. comparar y comprobar contraseñas
+  const isCorrectPassword = await verifyPassword(
+    userData.password,
+    user.password
+  );
+  if (!isCorrectPassword) {
+    return next(new AppError("Icorrect email or password", 401));
+  }
+  //4. generar el jwt
+  const token = await generateJWT(user.id);
+  //5. enviar la respuesta al cliente
+  return res.status(200).json({
+    token: token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
+});
+export const findAll = catchAsync(async (req, res, next) => {
+  const users = await UsersService.findAll();
+  return res.status(200).json(users);
+});
+export const create = async (req, res) => {
+  const { hasError, errorMessages, userData } = validateUser(req.body);
+  if (hasError) {
+    return res.status(422).json({
+      status: "error",
+      message: errorMessages,
+    });
+  }
+  const user = await UsersService.create(userData);
+  return res.status(201).json({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    password: user.password,
+    role: user.role,
+  });
 };
-
-export const createUser = async (req, res) => {
-  try {
-    const { name, email, password, role } = req.body;
-
-    const user = await UserService.create({ name, email, password, role });
-
-    return res.status(201).json(user);
-  } catch (error) {
-    return res.status(500).json({
-      status: "fail",
-      message: "Something went very wrong! 🧨",
+export const findOne = catchAsync(async (req, res, next) => {
+  const { user } = req;
+  return res.status(200).json(user);
+});
+export const updateOne = catchAsync(async (req, res, next) => {
+  const { user } = req;
+  const { hasError, errorMessages, userData } = validatePartialUser(req.body);
+  if (hasError) {
+    return res.status(422).json({
+      status: "error",
+      message: errorMessages,
     });
   }
-};
+  const userUpdate = await UsersService.update(user, userData);
+  return res.status(200).json(userUpdate);
+});
+export const deleteOne = async (req, res) => {
+  const { user } = req;
 
-export const findOneUser = async (req, res) => {
-  try {
-    const { id } = req.params;
+  await UsersService.delete(user);
 
-    const user = await UserService.findOne(id);
-
-    if (!user) {
-      return res.status(404).json({
-        status: "error",
-        message: "user not found",
-      });
-    }
-
-    return res.status(200).json(user);
-  } catch (error) {
-    return res.status(500).json({
-      status: "fail",
-      message: "Something went very wrong! 🧨",
-    });
-  }
-};
-
-export const updateUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, email } = req.body;
-
-    const user = await UserService.findOne(id);
-
-    if (!user) {
-      return res.status(404).json({
-        status: "error",
-        message: "user not found",
-      });
-    }
-
-    const userUpdated = await UserService.update(user, { name, email });
-
-    return res.status(200).json(userUpdated);
-  } catch (error) {
-    return res.status(500).json({
-      status: "fail",
-      message: "Something went very wrong! 🧨",
-    });
-  }
-};
-
-export const deleteUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const user = await UserService.findOne(id);
-
-    if (!user) {
-      return res.status(404).json({
-        status: "error",
-        message: "user not found",
-      });
-    }
-
-    await UserService.delete(user);
-
-    return res.status(204).json(null);
-  } catch (error) {
-    return res.status(500).json({
-      status: "fail",
-      message: "Something went very wrong! 🧨",
-    });
-  }
+  return res.status(204).json(null);
 };

@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize";
-import { envs } from "../enviroments/enviroments.js";
+import envs from "../enviroments/enviroments.js";
 
 export const sequelize = new Sequelize(envs.DB_URI, {
   logging: false,
@@ -8,17 +8,17 @@ export const sequelize = new Sequelize(envs.DB_URI, {
 export const authenticated = async () => {
   try {
     await sequelize.authenticate();
-    console.log("Connection ok!... 😀");
+    console.log("Connection has been established successfully.🫡");
   } catch (error) {
-    console.error(error);
+    console.log(error);
   }
 };
 
 export const syncUp = async () => {
   try {
-    await sequelize.sync();
-    console.log("Synced ok!... 😀");
+    await sequelize.sync(); //sync({force: true}) para forzar cambios pero borra todo.
+    console.log("Connection has been synced successfully!😃");
   } catch (error) {
-    console.error(error);
+    console.log(error);
   }
 };

@@ -1,32 +1,37 @@
-import Repair from "./repairs.model.js";
+import Repairs from "./repairs.model.js";
 
-export class RepairService {
-  static async findOne(id, status = "pending") {
-    return await Repair.findOne({
+export class RepairsService {
+  static async findOne(id) {
+    return await Repairs.findOne({
       where: {
         id,
-        status: status,
       },
     });
   }
-
   static async findAll() {
-    return await Repair.findAll({
+    return await Repairs.findAll({
       where: {
         status: "pending",
       },
     });
   }
-
   static async create(data) {
-    return await Repair.create(data);
+    return await Repairs.create(data);
   }
-
-  static async update(repair) {
-    return await repair.update({ status: "completed" });
+  static async update(repair, data) {
+    return await repair.update(data);
   }
-
   static async delete(repair) {
-    return await repair.update({ status: "cancelled" });
+    return await repair.update({
+      status: "cancelled",
+    });
+  }
+  static async findOnePending(id) {
+    return await Repairs.findOne({
+      where: {
+        id,
+        status: "pending",
+      },
+    });
   }
 }
